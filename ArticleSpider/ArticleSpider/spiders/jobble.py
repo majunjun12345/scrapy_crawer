@@ -32,16 +32,16 @@ class JobbleSpider(scrapy.Spider):
 
     def parse_detail(self, response):
         # 提取文章的具体字段
-        title = response.xpath('//*[@id="post-110287"]/div[1]/h1/text()').extract()[0]
+        title = response.xpath('//div[@class="entry-header"]/h1/text()').extract()[0]
         create_time = response.xpath("//p[@class='entry-meta-hide-on-mobile']/text()").extract()[0].strip().replace('·', '').strip()
         praise_num = int(response.xpath("//span[contains(@class, 'vote-post-up')]/h10/text()").extract()[0])
         # class 为多值时，可以用 contain 函数
         fav_num = response.xpath("//span[contains(@class, 'bookmark-btn')]/text()").extract()[0]
         match_re = re.match(".*(\d)+.*", fav_num)
-        fav_num = match_re.group(1) if match_re else 0
-        comm_num = response.xpath("//a[@href='#article-comment']/text()").extract()[0]
+        fav_num = int(match_re.group(1)) if match_re else 0
+        comm_num = response.xpath("//a[@href='#article-comment']/span/text()").extract()[0]
         match_re = re.match(".*(\d)+.*", comm_num)
-        comm_num = match_re.group(1) if match_re else 0
+        comm_num = int(match_re.group(1)) if match_re else 0
         content = response.xpath("//div[@class='entry']").extract()[0]
         tag_list = response.xpath("//p[@class='entry-meta-hide-on-mobile']/a/text()").extract()
         tag_list = [element for element in tag_list if not element.strip().endswith("评论")]
