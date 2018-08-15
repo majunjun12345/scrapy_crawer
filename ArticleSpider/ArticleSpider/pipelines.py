@@ -22,6 +22,7 @@ class JsonWithEncodingPipeline(object):
     def __init__(self):
         self.file = codecs.open("article.json", "w", encoding="utf-8")
     def process_item(self, item, spider):
+        # 默认使用 ascii 编码，设置为 False 之后就关闭了默认的 ascii 编码
         lines = json.dumps(dict(item), ensure_ascii=False) + "\n"
         self.file.write(lines)
         return item
