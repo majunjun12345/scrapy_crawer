@@ -61,12 +61,21 @@ ROBOTSTXT_OBEY = False
 #EXTENSIONS = {
 #    'scrapy.extensions.telnet.TelnetConsole': None,
 #}
-
+import os
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
+   # 设置自动下载图片的管道，后面的值越小，越优先
+   "scrapy.pipelines.images.ImagesPipeline":1,
+}
+"""
+告知哪个字段是图片 url
+设置图片存储路径
+"""
+IMAGES_URLS_FIELD = "front_image_url"
+project_dir = os.path.abspath(os.path.dirname(__file__))
+IMAGES_STORE = os.path.join(project_dir, "images")
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
