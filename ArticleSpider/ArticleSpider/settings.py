@@ -64,10 +64,15 @@ ROBOTSTXT_OBEY = False
 import os
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
+"""
+这里面对应的就是 pipelines 文件里面的类名, 在这里被调用执行
+"""
 ITEM_PIPELINES = {
-   'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
+   'ArticleSpider.pipelines.JsonExporterPipeline': 3,
+   'ArticleSpider.pipelines.JsonWithEncodingPipeline': 2,
    # 设置自动下载图片的管道，后面的值越小，越优先
-   "scrapy.pipelines.images.ImagesPipeline":1,
+   # "scrapy.pipelines.images.ImagesPipeline":1,
+   'ArticleSpider.pipelines.ArticleImagePipeline': 1,
 }
 """
 告知哪个字段是图片 url
@@ -76,6 +81,9 @@ ITEM_PIPELINES = {
 IMAGES_URLS_FIELD = "front_image_url"
 project_dir = os.path.abspath(os.path.dirname(__file__))
 IMAGES_STORE = os.path.join(project_dir, "images")
+
+# IMAGES_MIN_HEIGHT = 100
+# IMAGES_MIN_WIDTH = 100
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html

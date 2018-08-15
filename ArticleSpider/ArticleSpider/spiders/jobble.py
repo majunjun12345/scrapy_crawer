@@ -5,6 +5,7 @@ import re
 from urllib import parse
 # from ArticleSpider import JobBoleArticleItem (这样是错的)
 from ..items import JobBoleArticleItem
+from ..utils.common import get_md5
 
 class JobbleSpider(scrapy.Spider):
     name = 'jobble'
@@ -56,8 +57,10 @@ class JobbleSpider(scrapy.Spider):
         tag_list = [element for element in tag_list if not element.strip().endswith("评论")]
         tags = ','.join(tag_list)
 
+
         item["title"] = title
         item["url"] = response.url
+        item["url_object_id"] = get_md5(response.url)
         item["comm_num"] = comm_num
         item["praise_num"] = praise_num
         item["fav_num"] = fav_num
