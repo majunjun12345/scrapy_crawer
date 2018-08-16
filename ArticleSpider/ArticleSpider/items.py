@@ -29,3 +29,10 @@ class JobBoleArticleItem(scrapy.Item):
     fav_num = scrapy.Field()
     tags = scrapy.Field()
     content = scrapy.Field()
+
+
+
+
+
+
+# 可以使用插件像 django 的 model 那样：scrapy-djangoitem

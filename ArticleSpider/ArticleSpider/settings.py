@@ -68,11 +68,12 @@ import os
 这里面对应的就是 pipelines 文件里面的类名, 在这里被调用执行
 """
 ITEM_PIPELINES = {
-   'ArticleSpider.pipelines.JsonExporterPipeline': 3,
-   'ArticleSpider.pipelines.JsonWithEncodingPipeline': 2,
+   # 'ArticleSpider.pipelines.JsonExporterPipeline': 3,
+   # 'ArticleSpider.pipelines.JsonWithEncodingPipeline': 2,
+   'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
    # 设置自动下载图片的管道，后面的值越小，越优先
    # "scrapy.pipelines.images.ImagesPipeline":1,
-   'ArticleSpider.pipelines.ArticleImagePipeline': 1,
+   # 'ArticleSpider.pipelines.ArticleImagePipeline': 1,
 }
 """
 告知哪个字段是图片 url
@@ -105,3 +106,8 @@ IMAGES_STORE = os.path.join(project_dir, "images")
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+MYSQL_HOST = "127.0.0.1"
+MYSQL_DBNAME = "jobbole"
+MYSQL_USER = "root"
+MYSQL_PASSWORD = "123456"

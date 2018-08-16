@@ -9,6 +9,8 @@ import codecs
 import json
 from scrapy.exporters import JsonItemExporter
 import MySQLdb
+from MySQLdb import cursors
+from twisted.enterprise import adbapi
 
 """
 spider 中的每个 item 都会交给 item_pipeline 去处理，优先级根据后面的数字定义，越小优先级越高
@@ -24,7 +26,7 @@ class JsonWithEncodingPipeline(object):
         self.file = codecs.open("article.json", "w", encoding="utf-8")
     def process_item(self, item, spider):
         # 默认使用 ascii 编码，设置为 False 之后就关闭了默认的 ascii 编码
-        lines = json.dumps(dict(item), ensure_ascii=False) + "\n"
+        lines = json.dumps(dict(item), ensure_ascii=False)
         self.file.write(lines)
         return item
     def spider_closed(self, spider):
@@ -54,17 +56,61 @@ class ArticleImagePipeline(ImagesPipeline):
         item["front_image_path"] = image_file_path
         return item
 
-
+# 同步写入数据库
+# 解析速度大于数据的插入速度，导致阻塞
 class Mysqlpipeline(object):
     def __init__(self):
-        self.conn = MySQLdb.connect("127.0.0.1", "root", 123456, "bobbole", charset="utf8", use_unicode=True)
+        self.conn = MySQLdb.connect("127.0.0.1", "root", "123456", "jobbole", charset="utf8", use_unicode=True)
         self.cursor = self.conn.cursor()
 
     def process_item(self, item, spider):
         insert_sql = """
-        
+            insert into article(title, create_time, url, url_object_id, front_image_url,
+            front_image_path, praise_num, comm_num, fav_num, tags, content)
+            values
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
+        self.cursor.execute(insert_sql, (item["title"], item["create_time"], item["url"],
+        item["url_object_id"], item["front_image_url"], item["front_image_path"],
+        item["praise_num"], item["comm_num"], item["fav_num"], item["tags"], item["content"]))
+        self.conn.commit()
 
+# mysql 插入异步化
+class MysqlTwistedPipeline(object):
+    def __init__(self, dbpool):
+        self.dbpool = dbpool
+
+    @classmethod
+    def from_settings(cls, settings):
+        dbparams = dict(
+            host = settings["MYSQL_HOST"],
+            db = settings["MYSQL_DBNAME"],
+            user = settings["MYSQL_USER"],
+            passwd = settings["MYSQL_PASSWORD"],
+            charset = "utf8",
+            cursorclass = MySQLdb.cursors.DictCursor,
+            use_unicode = True
+        )
+        dbpool = adbapi.ConnectionPool("MySQLdb", **dbparams)
+        return cls(dbpool)
+
+    def process_item(self, item, spider):
+        # 使用 twisted 将 mysql 插入变成异步执行
+        query = self.dbpool.runInteraction(self.do_insert, item)
+        # 处理异常
+        query.addErrback(self.handle_error, item, spider)
+
+    def handle_error(self, failure, item, spider):
+        print(failure)
+
+    def do_insert(self, cursor, item):
+        insert_sql = """
+                    insert into article(title, create_time, url, url_object_id, front_image_url,
+                    praise_num, comm_num, fav_num, tags, content)
+                    values
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
+        cursor.execute(insert_sql, (item["title"], item["create_time"], item["url"], item["url_object_id"], item["front_image_url"], item["praise_num"], item["comm_num"], item["fav_num"], item["tags"], item["content"]))
 
 
 
