@@ -6,6 +6,7 @@ from urllib import parse
 # from ArticleSpider import JobBoleArticleItem (这样是错的)
 from ..items import JobBoleArticleItem
 from ..utils.common import get_md5
+import datetime
 
 class JobbleSpider(scrapy.Spider):
     name = 'jobble'
@@ -66,6 +67,10 @@ class JobbleSpider(scrapy.Spider):
         item["fav_num"] = fav_num
         item["tags"] = tags
         item["content"] = content
+        try:
+            create_time = datetime.datetime.strptime(create_time, "%Y/%m/%d").date()
+        except Exception as e:
+            create_time = datetime.datetime.now()
         item["create_time"] = create_time
         # 有说要下载图片的 url 必须是列表形式
         # https://www.jianshu.com/p/e598d6d8170d

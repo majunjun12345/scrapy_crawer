@@ -8,6 +8,7 @@ from scrapy.pipelines.images import ImagesPipeline
 import codecs
 import json
 from scrapy.exporters import JsonItemExporter
+import MySQLdb
 
 """
 spider 中的每个 item 都会交给 item_pipeline 去处理，优先级根据后面的数字定义，越小优先级越高
@@ -52,3 +53,24 @@ class ArticleImagePipeline(ImagesPipeline):
             image_file_path = value["path"]
         item["front_image_path"] = image_file_path
         return item
+
+
+class Mysqlpipeline(object):
+    def __init__(self):
+        self.conn = MySQLdb.connect("127.0.0.1", "root", 123456, "bobbole", charset="utf8", use_unicode=True)
+        self.cursor = self.conn.cursor()
+
+    def process_item(self, item, spider):
+        insert_sql = """
+        
+        """
+
+
+
+
+
+
+
+
+
+
