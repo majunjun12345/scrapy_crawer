@@ -6,6 +6,7 @@
 # https://doc.scrapy.org/en/latest/topics/items.html
 
 import scrapy
+from scrapy.loader.processors import MapCompose
 
 
 class ArticlespiderItem(scrapy.Item):
@@ -13,10 +14,15 @@ class ArticlespiderItem(scrapy.Item):
     # name = scrapy.Field()
     pass
 
+def add_jobbole(value):
+    return value + "-jobbole"
 
 class JobBoleArticleItem(scrapy.Item):
     # 只有一种数据类型，相当于包含了所有类型
-    title = scrapy.Field()
+    title = scrapy.Field(
+        # input_processor = MapCompose(add_jobbole)
+        input_processor = MapCompose(lambda x:x+ "-jobbole")
+    )
     create_time = scrapy.Field()
     url = scrapy.Field()
     # url 是变长的，通过 md5 将其变为定长
@@ -36,3 +42,4 @@ class JobBoleArticleItem(scrapy.Item):
 
 
 # 可以使用插件像 django 的 model 那样：scrapy-djangoitem
+# https://github.com/scrapy-plugins/scrapy-djangoitem

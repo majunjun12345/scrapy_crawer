@@ -7,6 +7,7 @@ from urllib import parse
 from ..items import JobBoleArticleItem
 from ..utils.common import get_md5
 import datetime
+from scrapy.loader import ItemLoader
 
 class JobbleSpider(scrapy.Spider):
     name = 'jobble'
@@ -76,4 +77,23 @@ class JobbleSpider(scrapy.Spider):
         # https://www.jianshu.com/p/e598d6d8170d
         item["front_image_url"] = [front_image_url]
         # 这样才能进入到 pipelines
+
+
+        # 通过 ItemLoader 来加载 item, 能够实现解析与赋值同步
+        item_loader = ItemLoader(item=JobBoleArticleItem(), response=response)
+        item_loader.add_css("title", ".entry-header h1::text")
+        item_loader.add_xpath("create_time", "//p[@class='entry-meta-hide-on-mobile']/text()")
+        item_loader.add_xpath("praise_num", "//span[contains(@class, 'vote-post-up')]/h10/text()")
+        item_loader.add_xpath("fav_num", "//span[contains(@class, 'bookmark-btn')]/text()")
+        item_loader.add_xpath("comm_num", "//a[@href='#article-comment']/span/text()")
+        item_loader.add_xpath("content", "//div[@class='entry']")
+        # item_loader.add_xpath("tag_list", "//p[@class='entry-meta-hide-on-mobile']/a/text()")
+        item_loader.add_value("url", response.url)
+        item_loader.add_value("url_object_id", get_md5(response.url))
+        item_loader.add_value("front_image_url", [front_image_url])
+
+        # 最后必须要 load 才能生成 item
+        item = item_loader.load_item()
+
+
         yield item
