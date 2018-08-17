@@ -73,7 +73,7 @@ ITEM_PIPELINES = {
    'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
    # 设置自动下载图片的管道，后面的值越小，越优先
    # "scrapy.pipelines.images.ImagesPipeline":1,
-   # 'ArticleSpider.pipelines.ArticleImagePipeline': 1,
+   'ArticleSpider.pipelines.ArticleImagePipeline': 1,
 }
 """
 告知哪个字段是图片 url

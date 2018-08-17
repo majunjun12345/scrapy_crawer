@@ -9,11 +9,13 @@ import codecs
 import json
 from scrapy.exporters import JsonItemExporter
 import MySQLdb
+# 这里必须提前导入 cursous
 from MySQLdb import cursors
 from twisted.enterprise import adbapi
 
 """
 spider 中的每个 item 都会交给 item_pipeline 去处理，优先级根据后面的数字定义，越小优先级越高
+item 类似于 dict 的模式
 """
 
 class ArticlespiderPipeline(object):
@@ -51,9 +53,10 @@ class JsonExporterPipeline(object):
 
 class ArticleImagePipeline(ImagesPipeline):
     def item_completed(self, results, item, info):
-        for ok, value in results:
-            image_file_path = value["path"]
-        item["front_image_path"] = image_file_path
+        if "front_image_url" in item:
+            for ok, value in results:
+                image_file_path = value["path"]
+            item["front_image_path"] = image_file_path
         return item
 
 # 同步写入数据库
@@ -91,18 +94,21 @@ class MysqlTwistedPipeline(object):
             cursorclass = MySQLdb.cursors.DictCursor,
             use_unicode = True
         )
+        # twisted 本身只是个异步的容器，连接数据库还是德用 mysqldb 库
+        # 第一个参数是连接的模块，后面是连接的参数
         dbpool = adbapi.ConnectionPool("MySQLdb", **dbparams)
         return cls(dbpool)
 
     def process_item(self, item, spider):
-        # 使用 twisted 将 mysql 插入变成异步执行
+        # 使用连接池做异步插入
         query = self.dbpool.runInteraction(self.do_insert, item)
-        # 处理异常
+        # 处理异步插入的异常
         query.addErrback(self.handle_error, item, spider)
 
     def handle_error(self, failure, item, spider):
         print(failure)
 
+    # 这里的 cursor 就是从 dbpool 拿出来的
     def do_insert(self, cursor, item):
         insert_sql = """
                     insert into article(title, create_time, url, url_object_id, front_image_url,
