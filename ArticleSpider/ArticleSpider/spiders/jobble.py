@@ -4,7 +4,7 @@ from scrapy.http import Request
 import re
 from urllib import parse
 # from ArticleSpider import JobBoleArticleItem (这样是错的)
-from ..items import JobBoleArticleItem
+from ..items import JobBoleArticleItem, ArticleItemLoader
 from ..utils.common import get_md5
 import datetime
 from scrapy.loader import ItemLoader
@@ -68,10 +68,7 @@ class JobbleSpider(scrapy.Spider):
         item["fav_num"] = fav_num
         item["tags"] = tags
         item["content"] = content
-        try:
-            create_time = datetime.datetime.strptime(create_time, "%Y/%m/%d").date()
-        except Exception as e:
-            create_time = datetime.datetime.now()
+
         item["create_time"] = create_time
         # 有说要下载图片的 url 必须是列表形式
         # https://www.jianshu.com/p/e598d6d8170d
@@ -80,20 +77,21 @@ class JobbleSpider(scrapy.Spider):
 
 
         # 通过 ItemLoader 来加载 item, 能够实现解析与赋值同步
-        item_loader = ItemLoader(item=JobBoleArticleItem(), response=response)
+        front_image_url = response.meta.get("front_image_url", "")
+        item_loader = ArticleItemLoader(item=JobBoleArticleItem(), response=response)
         item_loader.add_css("title", ".entry-header h1::text")
         item_loader.add_xpath("create_time", "//p[@class='entry-meta-hide-on-mobile']/text()")
         item_loader.add_xpath("praise_num", "//span[contains(@class, 'vote-post-up')]/h10/text()")
         item_loader.add_xpath("fav_num", "//span[contains(@class, 'bookmark-btn')]/text()")
         item_loader.add_xpath("comm_num", "//a[@href='#article-comment']/span/text()")
         item_loader.add_xpath("content", "//div[@class='entry']")
-        # item_loader.add_xpath("tag_list", "//p[@class='entry-meta-hide-on-mobile']/a/text()")
+        item_loader.add_xpath("tags", "//p[@class='entry-meta-hide-on-mobile']/a/text()")
         item_loader.add_value("url", response.url)
         item_loader.add_value("url_object_id", get_md5(response.url))
         item_loader.add_value("front_image_url", [front_image_url])
 
         # 最后必须要 load 才能生成 item
-        item = item_loader.load_item()
+        article_item = item_loader.load_item()
 
 
-        yield item
+        yield article_item

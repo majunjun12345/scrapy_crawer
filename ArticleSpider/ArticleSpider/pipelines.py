@@ -15,6 +15,7 @@ from twisted.enterprise import adbapi
 
 """
 spider 中的每个 item 都会交给 item_pipeline 去处理，优先级根据后面的数字定义，越小优先级越高
+item 类似于 dict 的模式
 """
 
 class ArticlespiderPipeline(object):
