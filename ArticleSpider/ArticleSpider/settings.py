@@ -66,14 +66,18 @@ import os
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 """
 这里面对应的就是 pipelines 文件里面的类名, 在这里被调用执行
+spider 里面所有 yield item 都会流经这里，这里可以对字段进行处理，比如 front_image_url
+也就是 item 会先流经这里
+根据优先级会不断对 item 进行处理, 一定要注意处理字段的优先级，不然可能取不到字段
 """
 ITEM_PIPELINES = {
-   # 'ArticleSpider.pipelines.JsonExporterPipeline': 3,
+   'ArticleSpider.pipelines.JsonExporterPipeline': 3,
    # 'ArticleSpider.pipelines.JsonWithEncodingPipeline': 2,
-   'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
+   'ArticleSpider.pipelines.MysqlTwistedPipeline': 5,
    # 设置自动下载图片的管道，后面的值越小，越优先
-   # "scrapy.pipelines.images.ImagesPipeline":1,
-   'ArticleSpider.pipelines.ArticleImagePipeline': 1,
+   # 继承图片下载的 pipeline 设置 图片保存路径
+   "scrapy.pipelines.images.ImagesPipeline":1,
+   'ArticleSpider.pipelines.ArticleImagePipeline': 2,
 }
 """
 告知哪个字段是图片 url

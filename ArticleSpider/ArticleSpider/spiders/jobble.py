@@ -3,7 +3,6 @@ import scrapy
 from scrapy.http import Request
 import re
 from urllib import parse
-# from ArticleSpider import JobBoleArticleItem (这样是错的)
 from ..items import JobBoleArticleItem, ArticleItemLoader
 from ..utils.common import get_md5
 import datetime
@@ -18,9 +17,8 @@ class JobbleSpider(scrapy.Spider):
 
     def parse(self, response):
         """
-        1. 获取文章列表页中的 url 并交给 scrapy 下载
-        2. scrapy 下载完成后交给 parse 函数进行解析
-
+        1. 获取文章列表页中的 url 并交给 scrapy 下载并进行解析
+        2. scrapy 下载完成后交给 parse_detail 函数进行解析
         """
         # 解析列表页中的所有文章 url 并交给 scrapy 下载后并进行解析
         post_nodes = response.css("#archive .floated-thumb .post-thumb a")
@@ -28,12 +26,16 @@ class JobbleSpider(scrapy.Spider):
             # 获取第一个元素，如果没有则默认为空
             image_url = post_node.css("img::attr(src)").extract_first("")
             post_url = post_node.css("::attr(href)").extract_first("")
-            # 如果没域名则拼凑，如果有域名，则忽略
+            """
+            如果没域名则拼凑, 如果有域名, 则忽略, 交给 scrapy 去下载，方便绝对路径和相对路径
+            在列表页中获取的元素可以通过 meta 参数传递给下面的 response，所以可以通过这种方式获取列表页中的元素            
+            """
             yield Request(url=parse.urljoin(response.url, post_url), meta={"front_image_url":image_url}, callback=self.parse_detail)
 
         # 提取下一页并交给 scrapy 进行下载
         next_url = response.css(".next.page-numbers::attr(href)").extract_first()
         if next_url:
+            # 这里是文章列表页，继续调用 parse 函数
             yield Request(url = next_url, callback=self.parse)
 
     def parse_detail(self, response):
@@ -41,7 +43,7 @@ class JobbleSpider(scrapy.Spider):
         item = JobBoleArticleItem()
         # 提取文章的具体字段
 
-        # 文章封面图
+        # 获取上面传递过来的数据
         front_image_url = response.meta.get("front_image_url", "")
 
         title = response.xpath('//div[@class="entry-header"]/h1/text()').extract()[0]
@@ -78,6 +80,8 @@ class JobbleSpider(scrapy.Spider):
 
         # 通过 ItemLoader 来加载 item, 能够实现解析与赋值同步
         front_image_url = response.meta.get("front_image_url", "")
+        # item_loader = ItemLoader(item=JobBoleArticleItem, response=response)
+        # 自定义的 loader, 继承 Itemloader
         item_loader = ArticleItemLoader(item=JobBoleArticleItem(), response=response)
         item_loader.add_css("title", ".entry-header h1::text")
         item_loader.add_xpath("create_time", "//p[@class='entry-meta-hide-on-mobile']/text()")
@@ -93,5 +97,5 @@ class JobbleSpider(scrapy.Spider):
         # 最后必须要 load 才能生成 item
         article_item = item_loader.load_item()
 
-
+        # 调用 yield 传递进 pipeline
         yield article_item

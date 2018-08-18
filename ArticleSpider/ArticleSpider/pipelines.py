@@ -14,7 +14,8 @@ from MySQLdb import cursors
 from twisted.enterprise import adbapi
 
 """
-spider 中的每个 item 都会交给 item_pipeline 去处理，优先级根据后面的数字定义，越小优先级越高
+pipeline 主要用于数据存储
+spider 中的每个 yield item 都会交给 item_pipeline 去处理，优先级根据后面的数字定义，越小优先级越高
 item 类似于 dict 的模式
 """
 
@@ -22,9 +23,10 @@ class ArticlespiderPipeline(object):
     def process_item(self, item, spider):
         return item
 
+# 自定义导出 json 文件
 class JsonWithEncodingPipeline(object):
-    # 自定义 json 文件的导出
     def __init__(self):
+        # 打开文件 codecs 能够避免很多编码的错误
         self.file = codecs.open("article.json", "w", encoding="utf-8")
     def process_item(self, item, spider):
         # 默认使用 ascii 编码，设置为 False 之后就关闭了默认的 ascii 编码
@@ -34,7 +36,7 @@ class JsonWithEncodingPipeline(object):
     def spider_closed(self, spider):
         self.file.close()
 
-
+# 根据模块导出 json 文件
 class JsonExporterPipeline(object):
     # 调用 scrapy 提供的 json export 导出 json 文件
     def __init__(self):
@@ -50,7 +52,7 @@ class JsonExporterPipeline(object):
         self.exporter.export_item(item)
         return item
 
-
+# 自定义 pipeline，继承 ImagesPipeline，设置 front_image_url 对应的 front_image_path
 class ArticleImagePipeline(ImagesPipeline):
     def item_completed(self, results, item, info):
         if "front_image_url" in item:
@@ -58,6 +60,8 @@ class ArticleImagePipeline(ImagesPipeline):
                 image_file_path = value["path"]
             item["front_image_path"] = image_file_path
         return item
+
+# 插入数据库后好像不用 return item
 
 # 同步写入数据库
 # 解析速度大于数据的插入速度，导致阻塞
@@ -78,11 +82,13 @@ class Mysqlpipeline(object):
         item["praise_num"], item["comm_num"], item["fav_num"], item["tags"], item["content"]))
         self.conn.commit()
 
+
 # mysql 插入异步化
 class MysqlTwistedPipeline(object):
     def __init__(self, dbpool):
         self.dbpool = dbpool
 
+    # settings 就是 settings 文件中的值
     @classmethod
     def from_settings(cls, settings):
         dbparams = dict(
@@ -111,12 +117,14 @@ class MysqlTwistedPipeline(object):
     # 这里的 cursor 就是从 dbpool 拿出来的
     def do_insert(self, cursor, item):
         insert_sql = """
-                    insert into article(title, create_time, url, url_object_id, front_image_url,
+                    insert into article(title, create_time, url, url_object_id, front_image_url, front_image_path,
                     praise_num, comm_num, fav_num, tags, content)
                     values
-                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
-        cursor.execute(insert_sql, (item["title"], item["create_time"], item["url"], item["url_object_id"], item["front_image_url"], item["praise_num"], item["comm_num"], item["fav_num"], item["tags"], item["content"]))
+        cursor.execute(insert_sql, (item["title"], item["create_time"], item["url"], item["url_object_id"],
+                                    item["front_image_url"], item["front_image_path"], item["praise_num"],
+                                    item["comm_num"], item["fav_num"], item["tags"], item["content"]))
 
 
 
